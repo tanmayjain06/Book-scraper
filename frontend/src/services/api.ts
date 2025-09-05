@@ -23,4 +23,5 @@ export const booksAPI = {
   }): Promise<BooksResponse> => api.get('/books', { params }).then(res => res.data),
 
   getBook: (id: string): Promise<Book> => api.get(`/books/${id}`).then(res => res.data),
+  
 };

@@ -131,7 +131,7 @@ const App: React.FC = () => {
           }}
         />
 
-        {loading && <div className="loading">Loading books...</div>}
+        {loading && <div className="loading"></div>}
         
         {error && <div className="error">{error}</div>}
 
