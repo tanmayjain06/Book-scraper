@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { booksAPI } from './services/api';
 import { Book, BooksResponse } from './types/Book';
 import BookCard from './components/BookCard';
@@ -22,7 +22,7 @@ const App: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState(100);
   const [stock, setStock] = useState('all');
 
-  const fetchBooks = async () => {
+  const fetchBooks = useCallback(async () => {
     try {
       setLoading(true);
       const response: BooksResponse = await booksAPI.getBooks({
@@ -42,14 +42,15 @@ const App: React.FC = () => {
       setError(null);
     } catch (err) {
       setError('Failed to fetch books. Make sure the backend is running!');
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, search, minRating, maxRating, minPrice, maxPrice, stock]);
 
   useEffect(() => {
     fetchBooks();
-  }, [currentPage, search, minRating, maxRating, minPrice, maxPrice, stock]);
+  }, [fetchBooks]);
 
   const handleBookClick = (book: Book) => {
     setSelectedBook(book);
@@ -59,30 +60,31 @@ const App: React.FC = () => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
   };
-  const handleRefreshData = async () => {
-  try {
-    setLoading(true);
-    const response = await fetch('http://localhost:5000/api/refresh', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      alert('Data refresh started! Please wait a few minutes and refresh the page.');
-    } else {
-      alert('Failed to start data refresh');
-    }
-  } catch (error) {
-    alert('Error triggering data refresh');
-  } finally {
-    setLoading(false);
-  }
-};
 
+  const handleRefreshData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Data refresh started! Please wait a few minutes and refresh the page.');
+      } else {
+        alert('Failed to start data refresh');
+      }
+    } catch (error) {
+      alert('Error triggering data refresh');
+      console.error('Refresh error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="app">
@@ -104,6 +106,7 @@ const App: React.FC = () => {
             📄 Pagination available below - Scroll down to navigate pages <span>↓</span>
           </div>
         )}
+        
         <SearchFilters
           search={search}
           minRating={minRating}
@@ -128,7 +131,7 @@ const App: React.FC = () => {
           }}
         />
 
-        {loading && <div className="loading"></div>}
+        {loading && <div className="loading">Loading books...</div>}
         
         {error && <div className="error">{error}</div>}
 
@@ -147,61 +150,58 @@ const App: React.FC = () => {
                 />
               ))}
             </div>
-
                     
-        <div className="pagination">
-
-          {currentPage > 1 && (
-            <button
-              className="page-btn"
-              onClick={() => handlePageChange(currentPage - 1)}
-            >
-              ← Previous
-            </button>
-          )}
-
-          {currentPage > 3 && (
-            <>
-              <button className="page-btn" onClick={() => handlePageChange(1)}>1</button>
-              {currentPage > 4 && <span className="pagination-dots">...</span>}
-            </>
-          )}
-
-          {[...Array(3)].map((_, i) => {
-            const page = currentPage - 1 + i;
-            if (page >= 1 && page <= totalPages) {
-              return (
+            <div className="pagination">
+              {currentPage > 1 && (
                 <button
-                  key={page}
-                  className={`page-btn ${currentPage === page ? 'active' : ''}`}
-                  onClick={() => handlePageChange(page)}
+                  className="page-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
                 >
-                  {page}
+                  ← Previous
                 </button>
-              );
-            }
-            return null;
-          })}
+              )}
 
-          {currentPage < totalPages - 2 && (
-            <>
-              {currentPage < totalPages - 3 && <span className="pagination-dots">...</span>}
-              <button className="page-btn" onClick={() => handlePageChange(totalPages)}>
-                {totalPages}
-              </button>
-            </>
-          )}
+              {currentPage > 3 && (
+                <>
+                  <button className="page-btn" onClick={() => handlePageChange(1)}>1</button>
+                  {currentPage > 4 && <span className="pagination-dots">...</span>}
+                </>
+              )}
 
-          {currentPage < totalPages && (
-            <button
-              className="page-btn"
-              onClick={() => handlePageChange(currentPage + 1)}
-            >
-              Next →
-            </button>
-          )}
-        </div>
+              {[...Array(3)].map((_, i) => {
+                const page = currentPage - 1 + i;
+                if (page >= 1 && page <= totalPages) {
+                  return (
+                    <button
+                      key={page}
+                      className={`page-btn ${currentPage === page ? 'active' : ''}`}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                return null;
+              })}
 
+              {currentPage < totalPages - 2 && (
+                <>
+                  {currentPage < totalPages - 3 && <span className="pagination-dots">...</span>}
+                  <button className="page-btn" onClick={() => handlePageChange(totalPages)}>
+                    {totalPages}
+                  </button>
+                </>
+              )}
+
+              {currentPage < totalPages && (
+                <button
+                  className="page-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                >
+                  Next →
+                </button>
+              )}
+            </div>
           </>
         )}
       </main>
