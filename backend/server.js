@@ -12,12 +12,10 @@ const PORT = process.env.PORT || 5000;
 
 // Enhanced CORS setup (you'll update this with your Vercel URL later)
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://book-scraper-brown.vercel.app/'  // Will accept any Vercel subdomain
-  ],
-  credentials: true
+  origin: '*',  // Allows all origins - USE ONLY FOR TESTING
+  credentials: false
 }));
+
 
 app.use(express.json());
 
