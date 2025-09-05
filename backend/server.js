@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://*.vercel.app'  // Will accept any Vercel subdomain
+    'https://book-scraper-brown.vercel.app/'  // Will accept any Vercel subdomain
   ],
   credentials: true
 }));
