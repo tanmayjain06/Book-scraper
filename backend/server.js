@@ -5,18 +5,42 @@ const Book = require('./models/book');
 const { spawn } = require('child_process');
 const path = require('path');
 const cron = require('node-cron');
-
-
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Enhanced CORS setup (you'll update this with your Vercel URL later)
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://*.vercel.app'  // Will accept any Vercel subdomain
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 mongoose.connect(process.env.MONGODB_URI);
 
+// ✅ ROOT ROUTE HANDLER - FIXES "Cannot GET /" ERROR
+app.get('/', (req, res) => {
+  res.json({
+    message: '📚 Book Explorer API is running!',
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      'Health Check': '/api/health',
+      'Get Books': '/api/books',
+      'Get Single Book': '/api/books/:id',
+      'Refresh Data': 'POST /api/refresh'
+    },
+    version: '1.0.0',
+    developer: 'Tanmay Jain'
+  });
+});
+
+// Your existing API routes (unchanged)
 app.get('/api/books', async (req, res) => {
   try {
     const {
@@ -88,11 +112,11 @@ app.post('/api/refresh', async (req, res) => {
     });
 
     scraperProcess.stderr.on('data', (data) => {
-      console.error(` Scraper Error: ${data}`);
+      console.error(`❌ Scraper Error: ${data}`);
     });
 
     scraperProcess.on('close', (code) => {
-      console.log(` Scraper process finished with code: ${code}`);
+      console.log(`✅ Scraper process finished with code: ${code}`);
     });
 
     res.json({
@@ -103,7 +127,7 @@ app.post('/api/refresh', async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Error triggering scraper:', error);
+    console.error('❌ Error triggering scraper:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to trigger data refresh',
@@ -112,11 +136,11 @@ app.post('/api/refresh', async (req, res) => {
   }
 });
 
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Cron job for scheduled scraping
 cron.schedule('0 2 * * *', () => {
   console.log('🕐 Scheduled scraper execution started at:', new Date().toISOString());
   
@@ -128,19 +152,18 @@ cron.schedule('0 2 * * *', () => {
   });
 
   scraperProcess.stderr.on('data', (data) => {
-    console.error(` Scheduled Scraper Error: ${data}`);
+    console.error(`❌ Scheduled Scraper Error: ${data}`);
   });
 
   scraperProcess.on('close', (code) => {
-    console.log(` Scheduled scraper completed with code: ${code}`);
+    console.log(`✅ Scheduled scraper completed with code: ${code}`);
   });
 }, {
   timezone: "Asia/Kolkata"  
 });
 
-console.log(' Cron job scheduled: Daily scraper at 2:00 AM IST');
+console.log('⏰ Cron job scheduled: Daily scraper at 2:00 AM IST');
 
-
-app.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
